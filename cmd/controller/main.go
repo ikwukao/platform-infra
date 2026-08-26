@@ -40,6 +40,13 @@ func main() {
 
 	projectRepository := projects.NewPostgresRepository(db)
 
+	if err := db.Migrate(context.Background()); err != nil {
+		logger.Error("database migration failed", "error", err)
+		os.Exit(1)
+	}
+
+	logger.Info("database migrations applied")
+
 	server := &http.Server{
 		Addr:              ":" + cfg.ServerPort,
 		Handler:           api.NewServer(projectRepository).Handler(),

@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: platform-infra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+      POSTGRES_DB: platform
+    ports:
+      - "5433:5432"
+    volumes:
+      - platform_infra_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U platform -d platform",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    container_name: platform-infra-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - platform_infra_redis:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "ping",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  platform_infra_postgres:
+  platform_infra_redis:

@@ -16,8 +16,8 @@ func Load() Config {
 	return Config{
 		ServerPort:  getEnv("PLATFORM_PORT", "9091"),
 		LogLevel:    getEnv("PLATFORM_LOG_LEVEL", "info"),
-		DatabaseURL: getEnv("PLATFORM_DATABASE_URL", "postgres://platform:platform@localhost:5432/platform?sslmode=disable"),
-		RedisURL:    getEnv("PLATFORM_REDIS_URL", "redis://localhost:6379"),
+		DatabaseURL: getEnv("PLATFORM_DATABASE_URL", "postgres://platform:platform@localhost:5433/platform?sslmode=disable"),
+		RedisURL:    getEnv("PLATFORM_REDIS_URL", "redis://localhost:6380"),
 	}
 }
 

@@ -10,7 +10,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - platform_infra_postgres:/var/lib/postgresql/data
+      - platform_infra_postgres:/var/lib/postgresql
     healthcheck:
       test:
         [

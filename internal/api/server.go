@@ -4,17 +4,21 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/ikwukao/platform-infra/internal/projects"
 )
 
 // Server exposes the Platform-Infra HTTP API.
 type Server struct {
-	mux *http.ServeMux
+	mux            *http.ServeMux
+	projectHandler *ProjectHandler
 }
 
 // NewServer creates a new API server with the default platform routes.
-func NewServer() *Server {
+func NewServer(projectRepository projects.Repository) *Server {
 	server := &Server{
-		mux: http.NewServeMux(),
+		mux:            http.NewServeMux(),
+		projectHandler: NewProjectHandler(projectRepository),
 	}
 
 	server.registerRoutes()
@@ -30,6 +34,40 @@ func (s *Server) Handler() http.Handler {
 func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("/healthz", s.health)
 	s.mux.HandleFunc("/readyz", s.ready)
+
+	s.mux.HandleFunc(
+		"/api/v1/projects",
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				s.projectHandler.list(w, r)
+			case http.MethodPost:
+				s.projectHandler.create(w, r)
+			default:
+				http.Error(
+					w,
+					"method not allowed",
+					http.StatusMethodNotAllowed,
+				)
+			}
+		},
+	)
+
+	s.mux.HandleFunc(
+		"/api/v1/projects/",
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				http.Error(
+					w,
+					"method not allowed",
+					http.StatusMethodNotAllowed,
+				)
+				return
+			}
+
+			s.projectHandler.get(w, r)
+		},
+	)
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {

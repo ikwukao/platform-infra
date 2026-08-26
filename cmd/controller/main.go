@@ -13,6 +13,8 @@ import (
 
 	"github.com/ikwukao/platform-infra/internal/api"
 	"github.com/ikwukao/platform-infra/internal/config"
+	"github.com/ikwukao/platform-infra/internal/projects"
+	"github.com/ikwukao/platform-infra/internal/storage"
 )
 
 func main() {
@@ -26,9 +28,21 @@ func main() {
 		"port", cfg.ServerPort,
 	)
 
+	db, err := storage.NewPostgres(
+		context.Background(),
+		cfg.DatabaseURL,
+	)
+	if err != nil {
+		logger.Error("database connection failed", "error", err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	projectRepository := projects.NewPostgresRepository(db)
+
 	server := &http.Server{
 		Addr:              ":" + cfg.ServerPort,
-		Handler:           api.NewServer().Handler(),
+		Handler:           api.NewServer(projectRepository).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

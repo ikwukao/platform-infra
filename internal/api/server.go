@@ -135,6 +135,22 @@ func (s *Server) registerRoutes() {
 			s.serviceHandler.get(w, r)
 		},
 	)
+
+	s.mux.HandleFunc(
+		"/api/v1/deployments/",
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method != http.MethodGet {
+				http.Error(
+					w,
+					"method not allowed",
+					http.StatusMethodNotAllowed,
+				)
+				return
+			}
+
+			s.deploymentHandler.get(w, r)
+		},
+	)
 }
 
 func (s *Server) health(

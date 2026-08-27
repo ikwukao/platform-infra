@@ -13,6 +13,7 @@ import (
 
 	"github.com/ikwukao/platform-infra/internal/api"
 	"github.com/ikwukao/platform-infra/internal/config"
+	"github.com/ikwukao/platform-infra/internal/deployments"
 	"github.com/ikwukao/platform-infra/internal/projects"
 	"github.com/ikwukao/platform-infra/internal/services"
 	"github.com/ikwukao/platform-infra/internal/storage"
@@ -61,12 +62,14 @@ func main() {
 
 	projectRepository := projects.NewPostgresRepository(db)
 	serviceRepository := services.NewPostgresRepository(db)
+	deploymentRepository := deployments.NewPostgresRepository(db)
 
 	server := &http.Server{
 		Addr: ":" + cfg.ServerPort,
 		Handler: api.NewServer(
 			projectRepository,
 			serviceRepository,
+			deploymentRepository,
 		).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}

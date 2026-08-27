@@ -14,46 +14,64 @@ import (
 	"github.com/ikwukao/platform-infra/internal/api"
 	"github.com/ikwukao/platform-infra/internal/config"
 	"github.com/ikwukao/platform-infra/internal/projects"
+	"github.com/ikwukao/platform-infra/internal/services"
 	"github.com/ikwukao/platform-infra/internal/storage"
 )
 
 func main() {
 	cfg := config.Load()
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	}))
+	logger := slog.New(slog.NewTextHandler(
+		os.Stdout,
+		&slog.HandlerOptions{
+			Level: slog.LevelInfo,
+		},
+	))
 
-	logger.Info("starting platform-infra controller",
-		"port", cfg.ServerPort,
+	logger.Info(
+		"starting platform-infra controller",
+		"port",
+		cfg.ServerPort,
 	)
 
+	ctx := context.Background()
+
 	db, err := storage.NewPostgres(
-		context.Background(),
+		ctx,
 		cfg.DatabaseURL,
 	)
 	if err != nil {
-		logger.Error("database connection failed", "error", err)
+		logger.Error(
+			"database connection failed",
+			"error",
+			err,
+		)
 		os.Exit(1)
 	}
 	defer db.Close()
 
-	projectRepository := projects.NewPostgresRepository(db)
-
-	if err := db.Migrate(context.Background()); err != nil {
-		logger.Error("database migration failed", "error", err)
+	if err := db.Migrate(ctx); err != nil {
+		logger.Error(
+			"database migration failed",
+			"error",
+			err,
+		)
 		os.Exit(1)
 	}
 
-	logger.Info("database migrations applied")
+	projectRepository := projects.NewPostgresRepository(db)
+	serviceRepository := services.NewPostgresRepository(db)
 
 	server := &http.Server{
-		Addr:              ":" + cfg.ServerPort,
-		Handler:           api.NewServer(projectRepository).Handler(),
+		Addr: ":" + cfg.ServerPort,
+		Handler: api.NewServer(
+			projectRepository,
+			serviceRepository,
+		).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	ctx, stop := signal.NotifyContext(
+	signalCtx, stop := signal.NotifyContext(
 		context.Background(),
 		os.Interrupt,
 		syscall.SIGTERM,
@@ -61,16 +79,24 @@ func main() {
 	defer stop()
 
 	go func() {
-		logger.Info("HTTP server listening", "addr", server.Addr)
+		logger.Info(
+			"HTTP server listening",
+			"addr",
+			server.Addr,
+		)
 
 		if err := server.ListenAndServe(); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			logger.Error("HTTP server failed", "error", err)
+			logger.Error(
+				"HTTP server failed",
+				"error",
+				err,
+			)
 			stop()
 		}
 	}()
 
-	<-ctx.Done()
+	<-signalCtx.Done()
 
 	logger.Info("shutdown signal received")
 
@@ -81,7 +107,11 @@ func main() {
 	defer cancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		logger.Error("graceful shutdown failed", "error", err)
+		logger.Error(
+			"graceful shutdown failed",
+			"error",
+			err,
+		)
 		return
 	}
 

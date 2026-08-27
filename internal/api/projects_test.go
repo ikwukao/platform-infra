@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/ikwukao/platform-infra/internal/projects"
+	"github.com/ikwukao/platform-infra/internal/services"
 )
 
 type mockProjectRepository struct {
@@ -223,7 +224,12 @@ func TestProjectHandlerList(t *testing.T) {
 
 func TestServerProjectRoutes(t *testing.T) {
 	repository := &mockProjectRepository{}
-	server := NewServer(repository)
+	serviceRepository := &mockServiceRepository{}
+
+	server := NewServer(
+		repository,
+		serviceRepository,
+	)
 
 	request := httptest.NewRequest(
 		http.MethodPost,
@@ -248,7 +254,11 @@ func TestServerProjectRoutes(t *testing.T) {
 
 func TestHealthEndpoint(t *testing.T) {
 	repository := &mockProjectRepository{}
-	server := NewServer(repository)
+	var serviceRepository services.Repository = nil
+	server := NewServer(
+		repository,
+		serviceRepository,
+	)
 
 	request := httptest.NewRequest(
 		http.MethodGet,
@@ -271,7 +281,12 @@ func TestHealthEndpoint(t *testing.T) {
 
 func TestReadyEndpoint(t *testing.T) {
 	repository := &mockProjectRepository{}
-	server := NewServer(repository)
+	var serviceRepository services.Repository = nil
+
+	server := NewServer(
+		repository,
+		serviceRepository,
+	)
 
 	request := httptest.NewRequest(
 		http.MethodGet,

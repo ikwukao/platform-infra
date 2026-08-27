@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -53,6 +54,12 @@ func (h *ProjectHandler) create(
 	}
 
 	if err := h.repository.Create(r.Context(), project); err != nil {
+		slog.Error(
+			"failed to create project",
+			"error",
+			err,
+		)
+
 		http.Error(
 			w,
 			"failed to create project",

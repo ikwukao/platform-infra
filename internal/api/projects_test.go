@@ -49,6 +49,13 @@ func (m *mockProjectRepository) List(
 
 type mockDeploymentRepository struct{}
 
+// ListPending implements [deployments.Repository].
+func (m *mockDeploymentRepository) ListPending(
+	_ context.Context,
+) ([]deployments.Deployment, error) {
+	return nil, nil
+}
+
 // UpdateStatus implements [deployments.Repository].
 func (m *mockDeploymentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
 	panic("unimplemented")

@@ -142,3 +142,36 @@ func (r *PostgresRepository) ListByService(
 
 	return deployments, nil
 }
+
+// UpdateStatus changes the lifecycle status of a deployment.
+func (r *PostgresRepository) UpdateStatus(
+	ctx context.Context,
+	id uuid.UUID,
+	status string,
+) error {
+	if !ValidStatus(status) {
+		return ErrInvalidStatus
+	}
+
+	result, err := r.db.Pool.Exec(
+		ctx,
+		`
+		UPDATE deployments
+		SET
+			status = $1,
+			updated_at = NOW()
+		WHERE id = $2
+		`,
+		status,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("update deployment status: %w", err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}

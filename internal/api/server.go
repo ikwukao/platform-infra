@@ -6,26 +6,30 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/ikwukao/platform-infra/internal/deployments"
 	"github.com/ikwukao/platform-infra/internal/projects"
 	"github.com/ikwukao/platform-infra/internal/services"
 )
 
 // Server exposes the Platform-Infra HTTP API.
 type Server struct {
-	mux            *http.ServeMux
-	projectHandler *ProjectHandler
-	serviceHandler *ServiceHandler
+	mux               *http.ServeMux
+	projectHandler    *ProjectHandler
+	serviceHandler    *ServiceHandler
+	deploymentHandler *DeploymentHandler
 }
 
 // NewServer creates an API server backed by the supplied repositories.
 func NewServer(
 	projectRepository projects.Repository,
 	serviceRepository services.Repository,
+	deploymentRepository deployments.Repository,
 ) *Server {
 	server := &Server{
-		mux:            http.NewServeMux(),
-		projectHandler: NewProjectHandler(projectRepository),
-		serviceHandler: NewServiceHandler(serviceRepository),
+		mux:               http.NewServeMux(),
+		projectHandler:    NewProjectHandler(projectRepository),
+		serviceHandler:    NewServiceHandler(serviceRepository),
+		deploymentHandler: NewDeploymentHandler(deploymentRepository),
 	}
 
 	server.registerRoutes()
@@ -100,6 +104,25 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc(
 		"/api/v1/services/",
 		func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/deployments") {
+				switch r.Method {
+				case http.MethodGet:
+					s.deploymentHandler.listByService(w, r)
+
+				case http.MethodPost:
+					s.deploymentHandler.create(w, r)
+
+				default:
+					http.Error(
+						w,
+						"method not allowed",
+						http.StatusMethodNotAllowed,
+					)
+				}
+
+				return
+			}
+
 			if r.Method != http.MethodGet {
 				http.Error(
 					w,

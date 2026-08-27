@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/ikwukao/platform-infra/internal/deployments"
 	"github.com/ikwukao/platform-infra/internal/projects"
 	"github.com/ikwukao/platform-infra/internal/services"
 )
@@ -44,6 +45,29 @@ func (m *mockProjectRepository) List(
 	_ context.Context,
 ) ([]projects.Project, error) {
 	return m.items, nil
+}
+
+type mockDeploymentRepository struct{}
+
+func (m *mockDeploymentRepository) Create(
+	_ context.Context,
+	deployment *deployments.Deployment,
+) error {
+	return nil
+}
+
+func (m *mockDeploymentRepository) Get(
+	_ context.Context,
+	id uuid.UUID,
+) (*deployments.Deployment, error) {
+	return nil, deployments.ErrNotFound
+}
+
+func (m *mockDeploymentRepository) ListByService(
+	_ context.Context,
+	serviceID uuid.UUID,
+) ([]deployments.Deployment, error) {
+	return nil, nil
 }
 
 func TestProjectHandlerCreate(t *testing.T) {
@@ -225,10 +249,12 @@ func TestProjectHandlerList(t *testing.T) {
 func TestServerProjectRoutes(t *testing.T) {
 	repository := &mockProjectRepository{}
 	serviceRepository := &mockServiceRepository{}
+	deploymentRepository := &mockDeploymentRepository{}
 
 	server := NewServer(
 		repository,
 		serviceRepository,
+		deploymentRepository,
 	)
 
 	request := httptest.NewRequest(
@@ -254,10 +280,14 @@ func TestServerProjectRoutes(t *testing.T) {
 
 func TestHealthEndpoint(t *testing.T) {
 	repository := &mockProjectRepository{}
+
 	var serviceRepository services.Repository = nil
+	var deploymentRepository deployments.Repository = nil
+
 	server := NewServer(
 		repository,
 		serviceRepository,
+		deploymentRepository,
 	)
 
 	request := httptest.NewRequest(
@@ -282,10 +312,12 @@ func TestHealthEndpoint(t *testing.T) {
 func TestReadyEndpoint(t *testing.T) {
 	repository := &mockProjectRepository{}
 	var serviceRepository services.Repository = nil
+	var deploymentRepository deployments.Repository = nil
 
 	server := NewServer(
 		repository,
 		serviceRepository,
+		deploymentRepository,
 	)
 
 	request := httptest.NewRequest(

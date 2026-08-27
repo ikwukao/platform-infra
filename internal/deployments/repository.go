@@ -175,3 +175,54 @@ func (r *PostgresRepository) UpdateStatus(
 
 	return nil
 }
+
+// ListPending returns deployments that are waiting to be reconciled.
+func (r *PostgresRepository) ListPending(
+	ctx context.Context,
+) ([]Deployment, error) {
+	rows, err := r.db.Pool.Query(
+		ctx,
+		`
+		SELECT
+			id,
+			service_id,
+			version,
+			status,
+			created_at,
+			updated_at
+		FROM deployments
+		WHERE status = $1
+		ORDER BY created_at ASC
+		`,
+		StatusPending,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("list pending deployments: %w", err)
+	}
+	defer rows.Close()
+
+	var result []Deployment
+
+	for rows.Next() {
+		var deployment Deployment
+
+		if err := rows.Scan(
+			&deployment.ID,
+			&deployment.ServiceID,
+			&deployment.Version,
+			&deployment.Status,
+			&deployment.CreatedAt,
+			&deployment.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan pending deployment: %w", err)
+		}
+
+		result = append(result, deployment)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate pending deployments: %w", err)
+	}
+
+	return result, nil
+}

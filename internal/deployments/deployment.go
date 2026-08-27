@@ -31,5 +31,6 @@ type Repository interface {
 	Create(ctx context.Context, deployment *Deployment) error
 	Get(ctx context.Context, id uuid.UUID) (*Deployment, error)
 	ListByService(ctx context.Context, serviceID uuid.UUID) ([]Deployment, error)
+	ListPending(ctx context.Context) ([]Deployment, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status string) error
 }

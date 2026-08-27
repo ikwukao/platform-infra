@@ -49,6 +49,11 @@ func (m *mockProjectRepository) List(
 
 type mockDeploymentRepository struct{}
 
+// UpdateStatus implements [deployments.Repository].
+func (m *mockDeploymentRepository) UpdateStatus(ctx context.Context, id uuid.UUID, status string) error {
+	panic("unimplemented")
+}
+
 func (m *mockDeploymentRepository) Create(
 	_ context.Context,
 	deployment *deployments.Deployment,

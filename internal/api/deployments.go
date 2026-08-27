@@ -78,7 +78,16 @@ func (h *DeploymentHandler) create(
 	}
 
 	if request.Status == "" {
-		request.Status = "pending"
+		request.Status = deployments.StatusPending
+	}
+
+	if !deployments.ValidStatus(request.Status) {
+		http.Error(
+			w,
+			"invalid deployment status",
+			http.StatusBadRequest,
+		)
+		return
 	}
 
 	deployment := &deployments.Deployment{
@@ -185,4 +194,90 @@ func (h *DeploymentHandler) listByService(
 	}
 
 	writeJSON(w, http.StatusOK, items)
+}
+
+func (h *DeploymentHandler) updateStatus(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+	idValue := strings.TrimPrefix(
+		r.URL.Path,
+		"/api/v1/deployments/",
+	)
+
+	idValue = strings.TrimSuffix(
+		idValue,
+		"/status",
+	)
+
+	id, err := uuid.Parse(idValue)
+	if err != nil {
+		http.Error(
+			w,
+			"invalid deployment id",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	var request struct {
+		Status string `json:"status"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(
+			w,
+			"invalid request body",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	request.Status = strings.TrimSpace(request.Status)
+
+	if !deployments.ValidStatus(request.Status) {
+		http.Error(
+			w,
+			"invalid deployment status",
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	if err := h.repository.UpdateStatus(
+		r.Context(),
+		id,
+		request.Status,
+	); err != nil {
+		if errors.Is(err, deployments.ErrNotFound) {
+			http.Error(
+				w,
+				"deployment not found",
+				http.StatusNotFound,
+			)
+			return
+		}
+
+		http.Error(
+			w,
+			"failed to update deployment",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	deployment, err := h.repository.Get(
+		r.Context(),
+		id,
+	)
+	if err != nil {
+		http.Error(
+			w,
+			"failed to retrieve deployment",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, deployment)
 }

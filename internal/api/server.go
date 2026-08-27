@@ -139,6 +139,20 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc(
 		"/api/v1/deployments/",
 		func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/status") {
+				if r.Method != http.MethodPatch {
+					http.Error(
+						w,
+						"method not allowed",
+						http.StatusMethodNotAllowed,
+					)
+					return
+				}
+
+				s.deploymentHandler.updateStatus(w, r)
+				return
+			}
+
 			if r.Method != http.MethodGet {
 				http.Error(
 					w,

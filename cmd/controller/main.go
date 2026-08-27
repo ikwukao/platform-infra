@@ -13,6 +13,7 @@ import (
 
 	"github.com/ikwukao/platform-infra/internal/api"
 	"github.com/ikwukao/platform-infra/internal/config"
+	"github.com/ikwukao/platform-infra/internal/controller"
 	"github.com/ikwukao/platform-infra/internal/deployments"
 	"github.com/ikwukao/platform-infra/internal/projects"
 	"github.com/ikwukao/platform-infra/internal/services"
@@ -64,6 +65,8 @@ func main() {
 	serviceRepository := services.NewPostgresRepository(db)
 	deploymentRepository := deployments.NewPostgresRepository(db)
 
+	deploymentController := controller.New(deploymentRepository)
+
 	server := &http.Server{
 		Addr: ":" + cfg.ServerPort,
 		Handler: api.NewServer(
@@ -92,6 +95,18 @@ func main() {
 			!errors.Is(err, http.ErrServerClosed) {
 			logger.Error(
 				"HTTP server failed",
+				"error",
+				err,
+			)
+			stop()
+		}
+	}()
+
+	go func() {
+		if err := deploymentController.Run(signalCtx, 5*time.Second); err != nil &&
+			!errors.Is(err, context.Canceled) {
+			logger.Error(
+				"deployment controller failed",
 				"error",
 				err,
 			)
